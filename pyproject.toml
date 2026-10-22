@@ -52,6 +52,12 @@ dev = [
     "twine>=5.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/cgyx008/visionpipe"
+Repository = "https://github.com/cgyx008/visionpipe"
+Issues = "https://github.com/cgyx008/visionpipe/issues"
+Changelog = "https://github.com/cgyx008/visionpipe/blob/main/CHANGELOG.md"
+
 [tool.setuptools]
 package-dir = { "" = "src" }
 
