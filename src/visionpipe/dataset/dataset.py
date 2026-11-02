@@ -6,7 +6,7 @@ from pathlib import Path
 from tqdm import tqdm
 
 from visionpipe.image.utils import rewrite_img
-from visionpipe.video.utils import extract_video_frames
+from visionpipe.video.utils import _record_problem, extract_video_frames
 
 
 class Dataset:
@@ -93,16 +93,27 @@ class Dataset:
             disable=None,
             smoothing=0,
         ):
-            if p.suffix.lower() in self.video_exts:
-                extract_video_frames(
+            try:
+                if p.suffix.lower() in self.video_exts:
+                    extract_video_frames(
+                        p,
+                        save_root=img_root,
+                        md5_stem=True,
+                        meta_dir=meta_dir,
+                        show_progress=False,
+                    )
+                else:
+                    rewrite_img(p, rewrite_root=img_root, meta_dir=meta_dir)
+            except KeyboardInterrupt:
+                raise
+            except Exception as exc:
+                _record_problem(
+                    meta_dir,
                     p,
-                    save_root=img_root,
-                    md5_stem=True,
-                    meta_dir=meta_dir,
-                    show_progress=False,
+                    "processing_error",
+                    error_type=type(exc).__name__,
+                    error=str(exc),
                 )
-            else:
-                rewrite_img(p, rewrite_root=img_root, meta_dir=meta_dir)
 
     def make_processed(self) -> None:
         """Create the processed directory for future pipeline stages."""

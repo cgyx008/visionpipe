@@ -158,3 +158,60 @@ def test_dataset_refuses_to_overwrite_existing_raw_file(
     message = str(exc_info.value)
     assert str(target) in message
     assert str(source / "001.mp4") in message
+
+
+def test_dataset_records_processing_error_and_continues(
+    tmp_path: Path,
+    make_video: Callable[..., Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    dataset_root = tmp_path / "dataset"
+    dataset_root.mkdir()
+    shutil.move(str(make_video()), dataset_root / "video.mp4")
+    cv2.imwrite(
+        str(dataset_root / "image.jpg"),
+        np.zeros((20, 30, 3), dtype=np.uint8),
+    )
+
+    def fail(*args: object, **kwargs: object) -> None:
+        raise RuntimeError("broken video")
+
+    monkeypatch.setattr(
+        "visionpipe.dataset.dataset.extract_video_frames",
+        fail,
+    )
+
+    Dataset(dataset_root)
+
+    problems = [
+        json.loads(line)
+        for line in (dataset_root / "metadata" / "problems.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    ]
+    assert problems[0]["kind"] == "processing_error"
+    assert problems[0]["error"] == "broken video"
+
+    images = list((dataset_root / "interim" / "images").rglob("*.jpg"))
+    assert len(images) == 1
+
+
+def test_dataset_does_not_swallow_keyboard_interrupt(
+    tmp_path: Path,
+    make_video: Callable[..., Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    dataset_root = tmp_path / "dataset"
+    dataset_root.mkdir()
+    shutil.move(str(make_video()), dataset_root / "video.mp4")
+
+    def interrupt(*args: object, **kwargs: object) -> None:
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(
+        "visionpipe.dataset.dataset.extract_video_frames",
+        interrupt,
+    )
+
+    with pytest.raises(KeyboardInterrupt):
+        Dataset(dataset_root)

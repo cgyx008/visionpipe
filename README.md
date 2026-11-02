@@ -40,8 +40,10 @@ vp.dataset.Dataset("data/root")
 `Dataset` recursively finds images and videos under `data/root`, excluding the
 generated `raw/`, `interim/`, `metadata/`, and `processed/` directories. Media
 files are moved into `data/root/raw/` with their relative paths preserved, and
-empty source directories are removed. Run it on a directory you intend to
-reorganize.
+empty source directories are removed. Problems found while reading or
+processing media are appended to `metadata/problems.jsonl`, and the run
+continues with the next file. `KeyboardInterrupt` still stops the run. Use it
+on a directory you intend to reorganize.
 
 Before:
 
@@ -68,7 +70,8 @@ data/root/
 │           └── <video-md5-prefix>_<frame>.jpg
 ├── processed/
 └── metadata/
-    └── metadata.jsonl
+    ├── metadata.jsonl
+    └── problems.jsonl
 ```
 
 ### Read video metadata
@@ -97,7 +100,7 @@ vp.video.extract_video_frames(
 
 | Call                            | Purpose                                  | Notes                                                                  |
 |---------------------------------|------------------------------------------|------------------------------------------------------------------------|
-| `vp.dataset.Dataset`            | Prepare a dataset from images and videos | Moves media into `raw/`; writes `interim/images/` and `metadata.jsonl` |
+| `vp.dataset.Dataset`            | Prepare a dataset from images and videos | Moves media into `raw/`; writes `interim/images/`, `metadata.jsonl`, and `problems.jsonl` |
 | `vp.video.get_video_meta`       | Read video metadata                      | `width` and `height` are post-rotation                                 |
 | `vp.video.extract_video_frames` | Extract sampled video frames             | Rotates pixels; output JPEGs have no EXIF orientation                  |
 | `vp.image.rewrite_img`          | Rewrite an image and record its metadata | Writes JSONL metadata and a content-addressed image                    |

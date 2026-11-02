@@ -6,7 +6,7 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.0] - 2026-11-02
 
 ### Added
 
@@ -14,6 +14,9 @@ All notable changes to this project are documented here. The format follows
   per-video progress bar.
 - Use cumulative average speed for the `Dataset` progress bar instead of an
   exponential moving average.
+- Record metadata, decoding, processing, and frame-count problems in
+  `metadata/problems.jsonl`. `Dataset` continues with the next file after a
+  problem, while `KeyboardInterrupt` still stops the run.
 
 ## [0.1.1] - 2026-11-02
 

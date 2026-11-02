@@ -97,6 +97,25 @@ def get_video_meta(p: str | Path) -> dict[str, Any]:
     }
 
 
+def _record_problem(
+    meta_dir: Path,
+    path: Path,
+    kind: str,
+    **extra: object,
+) -> None:
+    append_jsonl(
+        meta_dir / "problems.jsonl",
+        {
+            "path": path.as_posix(),
+            "kind": kind,
+            "timestamp": datetime.now()
+            .astimezone()
+            .isoformat(timespec="seconds"),
+            **extra,
+        },
+    )
+
+
 def extract_video_frames(
     p: str | Path,
     save_root: str | Path | None = None,
@@ -113,7 +132,18 @@ def extract_video_frames(
 
     meta_dir = p.parent if meta_dir is None else Path(meta_dir)
     meta_dir.mkdir(parents=True, exist_ok=True)
-    metadata = get_video_meta(p)
+    try:
+        metadata = get_video_meta(p)
+    except Exception as exc:
+        _record_problem(
+            meta_dir,
+            p,
+            "metadata_error",
+            error_type=type(exc).__name__,
+            error=str(exc),
+        )
+        return None
+
     append_jsonl(meta_dir / "metadata.jsonl", metadata)
 
     if not metadata["md5"] or not metadata["fps"]:
@@ -130,7 +160,15 @@ def extract_video_frames(
     frame_dir.mkdir(parents=True, exist_ok=True)
 
     retry = 3
+    last_error: Exception | None = None
+    decoded = 0
+    saved = 0
+    existing = 0
+
     for i in range(retry):
+        decoded = 0
+        saved = 0
+        existing = 0
         try:
             with av.open(p) as container:
                 stream = container.streams.video[0]
@@ -140,11 +178,13 @@ def extract_video_frames(
                 if show_progress:
                     it = tqdm(it, total=frames, disable=None)
                 for j, frame in enumerate(it):
+                    decoded += 1
                     if j % step != 0:
                         continue
 
                     frame_path = frame_dir / f"{stem}_{str(j).zfill(n0s)}.jpg"
                     if frame_path.exists():
+                        existing += 1
                         continue
 
                     img = frame.to_ndarray(format="bgr24")
@@ -152,13 +192,40 @@ def extract_video_frames(
                     ok = cv2.imwrite(frame_path.as_posix(), img)
                     if not ok:
                         raise OSError(f"failed to write image: {frame_path}")
+                    saved += 1
 
+            last_error = None
             break
 
-        except av.error.InvalidDataError as e:
+        except av.error.FFmpegError as e:
+            last_error = e
             if i < retry - 1:
                 ts = datetime.now().strftime("%Y%m%d_%H%M%S")
                 print(f"{ts} - {p} raises: {e}. Retrying {i + 2} / {retry}")
                 time.sleep(1)
+
+    if last_error is not None:
+        _record_problem(
+            meta_dir,
+            p,
+            "decode_error",
+            attempts=retry,
+            error_type=type(last_error).__name__,
+            error=str(last_error),
+            frames_expected=frames,
+            frames_decoded=decoded,
+            frames_saved=saved,
+            frames_existing=existing,
+        )
+    elif frames is not None and decoded != frames:
+        _record_problem(
+            meta_dir,
+            p,
+            "frame_count_mismatch",
+            frames_expected=frames,
+            frames_decoded=decoded,
+            frames_saved=saved,
+            frames_existing=existing,
+        )
 
     return None

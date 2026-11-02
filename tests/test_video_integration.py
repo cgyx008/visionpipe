@@ -1,9 +1,11 @@
+import json
 from collections.abc import Callable
 from pathlib import Path
 
 import cv2
 import pytest
 
+import visionpipe.video.utils as video_utils
 from visionpipe.video import extract_video_frames, get_video_meta
 
 
@@ -95,3 +97,56 @@ def test_extract_video_frames_can_disable_progress(
 
     files = sorted((tmp_path / "frames").rglob("*.jpg"))
     assert len(files) == 1
+
+
+def test_extract_video_frames_records_metadata_error(tmp_path: Path) -> None:
+    video = tmp_path / "bad.mp4"
+    video.write_bytes(b"not a video")
+
+    extract_video_frames(
+        video,
+        save_root=tmp_path / "frames",
+        meta_dir=tmp_path / "meta",
+    )
+
+    records = [
+        json.loads(line)
+        for line in (tmp_path / "meta" / "problems.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    ]
+    assert records[0]["kind"] == "metadata_error"
+    assert records[0]["path"] == video.as_posix()
+
+
+def test_extract_video_frames_records_frame_count_mismatch(
+    make_video: Callable[..., Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    video = make_video()
+    real_get_video_meta = video_utils.get_video_meta
+
+    def fake_get_video_meta(path: str | Path) -> dict[str, object]:
+        meta = real_get_video_meta(path)
+        meta["frames"] += 1
+        return meta
+
+    monkeypatch.setattr(video_utils, "get_video_meta", fake_get_video_meta)
+
+    extract_video_frames(
+        video,
+        save_root=tmp_path / "frames",
+        meta_dir=tmp_path / "meta",
+        show_progress=False,
+    )
+
+    records = [
+        json.loads(line)
+        for line in (tmp_path / "meta" / "problems.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    ]
+    assert records[0]["kind"] == "frame_count_mismatch"
+    assert records[0]["frames_expected"] == 4
+    assert records[0]["frames_decoded"] == 3

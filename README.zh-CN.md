@@ -36,7 +36,7 @@ import visionpipe as vp
 vp.dataset.Dataset("data/root")
 ```
 
-`Dataset` 会递归查找 `data/root` 下的图片和视频，排除生成目录 `raw/`、`interim/`、`metadata/`、`processed/`。媒体文件会移动到 `data/root/raw/`，并保留相对路径；移动完成后删除变空的源目录。请只对准备重新整理的目录运行。
+`Dataset` 会递归查找 `data/root` 下的图片和视频，排除生成目录 `raw/`、`interim/`、`metadata/`、`processed/`。媒体文件会移动到 `data/root/raw/`，并保留相对路径；移动完成后删除变空的源目录。读取或处理媒体时发现的问题会追加到 `metadata/problems.jsonl`，然后继续处理下一个文件；`KeyboardInterrupt` 仍会停止运行。请只对准备重新整理的目录运行。
 
 处理前：
 
@@ -63,7 +63,8 @@ data/root/
 │           └── <video-md5-prefix>_<frame>.jpg
 ├── processed/
 └── metadata/
-    └── metadata.jsonl
+    ├── metadata.jsonl
+    └── problems.jsonl
 ```
 
 ### 读取视频元数据
@@ -92,7 +93,7 @@ vp.video.extract_video_frames(
 
 | 调用                            | 用途                   | 说明                                                          |
 |---------------------------------|------------------------|---------------------------------------------------------------|
-| `vp.dataset.Dataset`            | 从图片和视频整理数据集 | 将媒体移入 `raw/`；写入 `interim/images/` 和 `metadata.jsonl` |
+| `vp.dataset.Dataset`            | 从图片和视频整理数据集 | 将媒体移入 `raw/`；写入 `interim/images/`、`metadata.jsonl` 和 `problems.jsonl` |
 | `vp.video.get_video_meta`       | 读取视频元数据         | `width` 和 `height` 是旋转后的尺寸                            |
 | `vp.video.extract_video_frames` | 抽取采样视频帧         | 会旋转像素；输出 JPEG 不含 EXIF orientation                   |
 | `vp.image.rewrite_img`          | 重写图片并记录元数据   | 写入 JSONL 和按内容寻址的图片                                 |
