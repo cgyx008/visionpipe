@@ -87,10 +87,19 @@ class Dataset:
         meta_dir = self.root / "metadata"
         meta_dir.mkdir(parents=True, exist_ok=True)
 
-        for p in tqdm(raw_files, desc="Making interim dir...", disable=None):
+        for p in tqdm(
+            raw_files,
+            desc="Making interim dir...",
+            disable=None,
+            smoothing=0,
+        ):
             if p.suffix.lower() in self.video_exts:
                 extract_video_frames(
-                    p, save_root=img_root, md5_stem=True, meta_dir=meta_dir
+                    p,
+                    save_root=img_root,
+                    md5_stem=True,
+                    meta_dir=meta_dir,
+                    show_progress=False,
                 )
             else:
                 rewrite_img(p, rewrite_root=img_root, meta_dir=meta_dir)

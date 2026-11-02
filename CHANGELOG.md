@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Add `show_progress` to `extract_video_frames()` so callers can suppress the
+  per-video progress bar.
+- Use cumulative average speed for the `Dataset` progress bar instead of an
+  exponential moving average.
+
 ## [0.1.1] - 2026-11-02
 
 ### Added

@@ -6,6 +6,13 @@
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)，版本号遵循
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)。
 
+## [Unreleased]
+
+### 新增
+
+- `extract_video_frames()` 新增 `show_progress` 参数，可以关闭单个视频的抽帧进度条。
+- `Dataset` 进度条改用累计平均速度，不再使用指数移动平均。
+
 ## [0.1.1] - 2026-11-02
 
 ### 新增

@@ -103,6 +103,7 @@ def extract_video_frames(
     md5_stem: bool = False,
     step_seconds: float = 1,
     meta_dir: str | Path | None = None,
+    show_progress: bool = True,
 ) -> None:
     os.umask(0)
 
@@ -135,8 +136,10 @@ def extract_video_frames(
                 stream = container.streams.video[0]
                 n0s = len(str(frames)) if frames is not None else 6
 
-                pb = tqdm(container.decode(stream), total=frames, disable=None)
-                for j, frame in enumerate(pb):
+                it = container.decode(stream)
+                if show_progress:
+                    it = tqdm(it, total=frames, disable=None)
+                for j, frame in enumerate(it):
                     if j % step != 0:
                         continue
 

@@ -72,3 +72,26 @@ def test_extract_video_frames_with_unknown_frame_count(
 
     files = sorted((tmp_path / "frames").rglob("*.jpg"))
     assert len(files) >= 1
+
+
+def test_extract_video_frames_can_disable_progress(
+    make_video: Callable[..., Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    video = make_video()
+
+    def fail(*args: object, **kwargs: object) -> None:
+        raise AssertionError("tqdm should not be called")
+
+    monkeypatch.setattr("visionpipe.video.utils.tqdm", fail)
+
+    extract_video_frames(
+        video,
+        save_root=tmp_path / "frames",
+        meta_dir=tmp_path / "meta",
+        show_progress=False,
+    )
+
+    files = sorted((tmp_path / "frames").rglob("*.jpg"))
+    assert len(files) == 1
