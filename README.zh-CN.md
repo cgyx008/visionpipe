@@ -36,14 +36,15 @@ import visionpipe as vp
 vp.dataset.Dataset("data/root")
 ```
 
-`Dataset` 会把 `data/root` 下的媒体文件移动到 `data/root/raw/`，然后原地处理。请只对准备重新整理的目录运行。
+`Dataset` 会递归查找 `data/root` 下的图片和视频，排除生成目录 `raw/`、`interim/`、`metadata/`、`processed/`。媒体文件会移动到 `data/root/raw/`，并保留相对路径；移动完成后删除变空的源目录。请只对准备重新整理的目录运行。
 
 处理前：
 
 ```text
 data/root/
-├── still.jpg
-└── video.mp4
+├── youtube/
+│   └── 001.mp4
+└── still.jpg
 ```
 
 处理后：
@@ -52,13 +53,15 @@ data/root/
 data/root/
 ├── raw/
 │   ├── still.jpg
-│   └── video.mp4
+│   └── youtube/
+│       └── 001.mp4
 ├── interim/
 │   └── images/
 │       ├── i<image-md5-prefix>/
 │       │   └── <image-md5-prefix>.jpg
 │       └── v<video-md5-prefix>/
 │           └── <video-md5-prefix>_<frame>.jpg
+├── processed/
 └── metadata/
     └── metadata.jsonl
 ```

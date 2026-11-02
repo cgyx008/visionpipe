@@ -37,16 +37,19 @@ import visionpipe as vp
 vp.dataset.Dataset("data/root")
 ```
 
-`Dataset` moves media files found directly under `data/root` into
-`data/root/raw/`, then processes them in place. Run it on a directory you
-intend to reorganize.
+`Dataset` recursively finds images and videos under `data/root`, excluding the
+generated `raw/`, `interim/`, `metadata/`, and `processed/` directories. Media
+files are moved into `data/root/raw/` with their relative paths preserved, and
+empty source directories are removed. Run it on a directory you intend to
+reorganize.
 
 Before:
 
 ```text
 data/root/
-├── still.jpg
-└── video.mp4
+├── youtube/
+│   └── 001.mp4
+└── still.jpg
 ```
 
 After:
@@ -55,13 +58,15 @@ After:
 data/root/
 ├── raw/
 │   ├── still.jpg
-│   └── video.mp4
+│   └── youtube/
+│       └── 001.mp4
 ├── interim/
 │   └── images/
 │       ├── i<image-md5-prefix>/
 │       │   └── <image-md5-prefix>.jpg
 │       └── v<video-md5-prefix>/
 │           └── <video-md5-prefix>_<frame>.jpg
+├── processed/
 └── metadata/
     └── metadata.jsonl
 ```

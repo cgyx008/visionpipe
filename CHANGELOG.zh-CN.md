@@ -6,6 +6,13 @@
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)，版本号遵循
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)。
 
+## [0.1.1] - 2026-11-02
+
+### 新增
+
+- 递归查找 `raw/`、`interim/`、`metadata/`、`processed/` 之外的媒体文件，保留相对路径移动到 `raw/`，并删除移动后变空的源目录。
+- 创建 `processed/` 目录，作为后续处理步骤的占位。
+
 ## [0.1.0] - 2026-10-22
 
 ### 新增

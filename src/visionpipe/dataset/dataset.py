@@ -1,3 +1,4 @@
+import contextlib
 import os
 import shutil
 from pathlib import Path
@@ -33,21 +34,43 @@ class Dataset:
         self.img_exts = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
         self.video_exts = {".mp4", ".avi", ".mov"}
         self.exts = self.img_exts | self.video_exts
+        self.gen_dirs = {"raw", "interim", "metadata", "processed"}
 
         self.make_raw()
         self.make_interim()
+        self.make_processed()
 
     def make_raw(self) -> None:
-        raw_files = [
-            p for p in self.root.glob("*") if p.suffix.lower() in self.exts
-        ]
         raw_dir = self.root / "raw"
         raw_dir.mkdir(parents=True, exist_ok=True)
-        for p in raw_files:
-            shutil.move(p, raw_dir)
 
-        interim_dir = self.root / "interim"
-        interim_dir.mkdir(parents=True, exist_ok=True)
+        moves: list[tuple[Path, Path]] = []
+        for p in self.root.glob("**/*.*"):
+            if not p.is_file() or p.suffix.lower() not in self.exts:
+                continue
+
+            rel = p.relative_to(self.root)
+            if rel.parts[0] in self.gen_dirs:
+                continue
+
+            dst = raw_dir / rel
+            if dst.exists():
+                raise FileExistsError(
+                    f"destination already exists: {dst}; source: {p}"
+                )
+            moves.append((p, dst))
+
+        for p, dst in moves:
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(p, dst)
+
+        for d, _, _ in self.root.walk(top_down=False):
+            if d == self.root:
+                continue
+            if d.relative_to(self.root).parts[0] in self.gen_dirs:
+                continue
+            with contextlib.suppress(OSError):
+                d.rmdir()  # 非空抛 OSError
 
     def make_interim(self) -> None:
         raw_files = sorted(
@@ -71,3 +94,8 @@ class Dataset:
                 )
             else:
                 rewrite_img(p, rewrite_root=img_root, meta_dir=meta_dir)
+
+    def make_processed(self) -> None:
+        """Create the processed directory for future pipeline stages."""
+        d = self.root / "processed"
+        d.mkdir(parents=True, exist_ok=True)
